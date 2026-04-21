@@ -1,35 +1,27 @@
-# Performance Testing
+# Optimal Config Selection
 
 ## Goal
 
-Compare JVM presets and choose the best one for a specific PC using a balanced view of:
+Choose the best JVM preset for a specific PC without built-in runtime metric collection.
 
-- latency (frametime/pause),
-- throughput (FPS),
-- stability (CPU/wait behavior).
+## Baseline strategy
 
-## Data sources
+1. Apply `Apply Recommended Config` / `cli.exe --autotune`.
+2. Use `balanced` as the default baseline.
+3. For low-end hardware try `compat`; for stronger hardware try `performance`/`ultra`.
 
-- `logs/presets/<preset>.jsonl` — primary ranking input;
-- `logs/game_metrics.jsonl` — optional game metrics;
-- `logs/wrapper.log` — launch diagnostics.
+## Manual validation
 
-## Minimal test protocol
-
-1. Pick 2-4 presets.
-2. Run at least 2 full gameplay sessions per preset.
-3. Execute `cli.exe --benchmark`.
-4. Record top-1 result and confidence.
-
-## Confidence interpretation
-
-- `high` — enough game-metric coverage;
-- `medium` — mixed data (partial fallback);
-- `low` — mostly process-only fallback.
+Validate presets manually:
+- same map/route scenario;
+- same graphics settings;
+- at least 10-15 minutes per preset;
+- compare real frametime smoothness and stutter behavior.
 
 ## Measurement hygiene
 
 - same map/route scenario for each run;
 - same graphics settings;
 - close heavy background processes;
-- avoid comparing based on very short sessions.
+- avoid very short sessions;
+- lock selected result via `Select Config`.

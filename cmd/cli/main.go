@@ -55,10 +55,10 @@ func handleCLI() (handled bool, code int) {
 	case "--status":
 		ui.PrintStatus()
 		return true, 0
-	case "--benchmark":
-		if err := ui.RunBenchmarkOnce(); err != nil {
-			slog.Error("benchmark failed", "err", err)
-			fmt.Fprintf(os.Stderr, "[benchmark] %v\n", err)
+	case "--autotune":
+		if err := ui.RunAutoTuneOnce(); err != nil {
+			slog.Error("autotune failed", "err", err)
+			fmt.Fprintf(os.Stderr, "[autotune] %v\n", err)
 			return true, 1
 		}
 		return true, 0

@@ -23,7 +23,6 @@ import (
 	"stalart-wrapper/internal/phantom"
 	"stalart-wrapper/internal/process"
 	"stalart-wrapper/internal/sysinfo"
-	"stalart-wrapper/internal/telemetry"
 )
 
 func main() {
@@ -53,7 +52,6 @@ func launch(exePath string, args []string) int {
 	origArgs := append([]string(nil), args...)
 	presetName := "passthrough"
 	presetMode := "passthrough"
-	var presetCfg *config.Config
 
 	sys := sysinfo.Detect()
 	slog.Info("system detected",
@@ -99,8 +97,6 @@ func launch(exePath string, args []string) int {
 					args = jvm.InjectArgs(args, injected)
 					presetName = loadedName
 					presetMode = "java25-safe"
-					cfgCopy := cfg
-					presetCfg = &cfgCopy
 					slog.Info("config loaded",
 						"name", loadedName,
 						"mode", "java25-safe",
@@ -138,8 +134,6 @@ func launch(exePath string, args []string) int {
 				args = jvm.FilterArgs(args, injected)
 				presetName = loadedName
 				presetMode = mode
-				cfgCopy := cfg
-				presetCfg = &cfgCopy
 				slog.Info("config loaded",
 					"name", loadedName,
 					"mode", mode,
@@ -178,78 +172,16 @@ func launch(exePath string, args []string) int {
 			fmt.Fprintf(os.Stderr, "[boost] %v\n", err)
 		}
 
-		sampler := telemetry.Start(proc.Handle)
-
 		start := time.Now()
 		code, err := proc.Wait()
 		waitMs := time.Since(start).Milliseconds()
-		sampler.MergeGameMetrics(runExe, start)
-		snap := sampler.Stop()
-		telemetryQuality := "process_only"
-		if snap.GameMetricsDetected && snap.GameSamples >= 10 {
-			telemetryQuality = "full"
-		} else if snap.GameMetricsDetected {
-			telemetryQuality = "partial"
-		}
-		slog.Info("telemetry summary",
+		slog.Info("process exit summary",
 			"attempt", attempt,
-			"samples", snap.Samples,
-			"avg_process_cpu_pct", fmt.Sprintf("%.2f", snap.AvgProcessCPUPercent),
-			"peak_working_set_mb", fmt.Sprintf("%.2f", snap.PeakWorkingSetMB),
-			"game_metrics_detected", snap.GameMetricsDetected,
-			"game_samples", snap.GameSamples,
-			"game_avg_fps", fmt.Sprintf("%.2f", snap.GameAvgFPS),
-			"game_avg_frame_time_ms", fmt.Sprintf("%.2f", snap.GameAvgFrameTimeMS),
-			"game_avg_cpu_pct", fmt.Sprintf("%.2f", snap.GameAvgCPUPercent),
-			"game_avg_gpu_pct", fmt.Sprintf("%.2f", snap.GameAvgGPUPercent),
-			"game_metrics_source", logging.RedactPath(snap.GameMetricsSource),
-			"game_metrics_reason", snap.GameMetricsReason,
-			"game_lines_read", snap.GameLinesRead,
-			"game_lines_invalid", snap.GameLinesInvalid,
-			"game_lines_skipped_old", snap.GameLinesSkippedOld,
-			"telemetry_quality", telemetryQuality,
+			"preset_name", presetName,
+			"preset_mode", presetMode,
+			"wait_ms", waitMs,
+			"exit_code", code,
 		)
-		presetEvent := map[string]any{
-			"ts":                     time.Now().UTC().Format(time.RFC3339),
-			"attempt":                attempt,
-			"preset_name":            presetName,
-			"preset_mode":            presetMode,
-			"exe":                    logging.RedactPath(runExe),
-			"arg_count":              len(runArgs),
-			"wait_ms":                waitMs,
-			"exit_code":              code,
-			"exit_code_i32":          int32(uint32(code)),
-			"samples":                snap.Samples,
-			"avg_process_cpu_pct":    snap.AvgProcessCPUPercent,
-			"peak_working_set_mb":    snap.PeakWorkingSetMB,
-			"game_metrics_detected":  snap.GameMetricsDetected,
-			"game_samples":           snap.GameSamples,
-			"game_avg_fps":           snap.GameAvgFPS,
-			"game_avg_frame_time_ms": snap.GameAvgFrameTimeMS,
-			"game_avg_cpu_pct":       snap.GameAvgCPUPercent,
-			"game_avg_gpu_pct":       snap.GameAvgGPUPercent,
-			"game_metrics_source":    logging.RedactPath(snap.GameMetricsSource),
-			"game_metrics_reason":    snap.GameMetricsReason,
-			"game_lines_read":        snap.GameLinesRead,
-			"game_lines_invalid":     snap.GameLinesInvalid,
-			"game_lines_skipped_old": snap.GameLinesSkippedOld,
-			"telemetry_quality":      telemetryQuality,
-			"normal_launch":          code == 0,
-		}
-		if presetCfg != nil {
-			presetEvent["heap_gb"] = presetCfg.HeapSizeGB
-			presetEvent["pause_ms"] = presetCfg.MaxGCPauseMillis
-			presetEvent["parallel_gc"] = presetCfg.ParallelGCThreads
-			presetEvent["conc_gc"] = presetCfg.ConcGCThreads
-			presetEvent["ihop"] = presetCfg.InitiatingHeapOccupancyPercent
-			presetEvent["region_mb"] = presetCfg.G1HeapRegionSizeMB
-			presetEvent["pre_touch"] = presetCfg.PreTouch
-			presetEvent["large_pages"] = presetCfg.UseLargePages
-			presetEvent["string_dedup"] = presetCfg.UseStringDeduplication
-		}
-		if err := logging.AppendPresetRun(presetName, presetEvent); err != nil {
-			slog.Warn("failed to append preset run log", "preset", presetName, "err", err)
-		}
 		if err != nil {
 			slog.Error("process wait failed", "attempt", attempt, "err", err, "wait_ms", waitMs)
 			fmt.Fprintf(os.Stderr, "[wait] %v\n", err)

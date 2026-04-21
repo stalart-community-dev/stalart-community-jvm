@@ -4,7 +4,6 @@
 
 1. Check `cli.exe --status`.
 2. Confirm `logs/wrapper.log` is updating.
-3. Confirm entries appear in `logs/presets/*.jsonl`.
 
 ## Expected messages
 
@@ -24,22 +23,15 @@ Normal process termination (including manual game close).
 - ensure antivirus did not remove/block `service.exe`;
 - run `Uninstall` -> `Install` again.
 
-### Benchmark says `not enough preset benchmark data`
+### Auto tune selected a wrong preset
 
-- you need at least 2 successful runs per compared preset;
-- use real game sessions, not only quick start/close cycles;
-- enable `metrics-helper` if needed.
-
-### No game metrics (`game_metrics_detected=false`)
-
-- run `metrics-helper` and verify `game_metrics.jsonl` path;
-- or set `STALART_GAME_METRICS_FILE`;
-- make sure the file is actively appended during gameplay.
+- run `Apply Recommended Config` again;
+- verify hardware profile is unchanged (RAM/CPU mode);
+- switch preset manually via `Select Config` if needed.
 
 ## When opening an issue
 
 Attach:
 
 - `logs/wrapper.log`;
-- relevant `logs/presets/*.jsonl`;
 - environment details (launcher/Steam/EGS, selected preset, reproduction steps).

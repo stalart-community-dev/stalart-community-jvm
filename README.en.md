@@ -10,8 +10,8 @@ Unofficial utility for optimizing JVM startup in Stalart on Windows.
 - installs IFEO interception so `java.exe`/`javaw.exe` launches through `service.exe`;
 - loads the active profile from `configs/*.json`;
 - injects JVM flags for game launches;
-- records launch telemetry into `logs/wrapper.log` and `logs/presets/*.jsonl`;
-- can auto-select the best preset via menu or `cli.exe --benchmark`.
+- writes basic launch diagnostics to `logs/wrapper.log`;
+- auto-selects recommended preset by hardware.
 
 ## How it works
 
@@ -19,7 +19,7 @@ Unofficial utility for optimizing JVM startup in Stalart on Windows.
 2. Windows registers `service.exe` as IFEO debugger for Java processes.
 3. On game launch, Windows starts `service.exe` first.
 4. `service.exe` validates launch context, applies profile, starts JVM, waits for exit.
-5. On exit it writes metrics and process exit status.
+5. On exit it writes process status and diagnostics.
 
 Detailed flow: [docs/OVERVIEW.en.md](./docs/OVERVIEW.en.md).
 
@@ -28,30 +28,31 @@ Detailed flow: [docs/OVERVIEW.en.md](./docs/OVERVIEW.en.md).
 1. Extract release files into `jvm_wrapper` next to Stalart launcher.
 2. Run `cli.exe` as administrator.
 3. Select `Install`.
-4. Launch the game.
-5. Switch profiles later via `Select Config` if needed.
-6. if you need launch vanila launcher select `Uninstall`
+4. Select `Apply Recommended Config`.
+5. Launch the game.
+6. Switch profiles later via `Select Config` if needed.
 
 ## Configs and presets
 
 - Active profile key: `HKCU\\Software\\StalartWrapper`.
 - Base profile: `configs/default.json`.
 - Built-in presets: `compat`, `balanced`, `performance`, `ultra`.
+- Default recommendation: `balanced`.
 - Preset overview: [docs/PROFILES.en.md](./docs/PROFILES.en.md).
 - JSON parameters: [docs/PARAMS.en.md](./docs/PARAMS.en.md).
 
-## Telemetry and benchmark
+## Hardware-based auto tune
 
 - Global log: `logs/wrapper.log`.
-- Per-preset logs: `logs/presets/<preset>.jsonl`.
-- Optional game metrics input: `logs/game_metrics.jsonl`.
 - Auto-pick preset:
-  - menu: `Benchmark Presets (auto-select best)`
-  - CLI: `cli.exe --benchmark`
+  - menu: `Apply Recommended Config`
+  - CLI: `cli.exe --autotune`
 
-If game metrics are missing, ranking still works using soft fallback (CPU/wait) with lower confidence.
-
-Benchmark methodology: [docs/PERF_TESTING.en.md](./docs/PERF_TESTING.en.md).
+Selection logic:
+- `compat` for low-end systems,
+- `balanced` for most systems,
+- `performance` for stronger systems,
+- `ultra` for high-end big-cache systems.
 
 ## Troubleshooting
 
@@ -62,11 +63,10 @@ See [docs/TROUBLESHOOTING.en.md](./docs/TROUBLESHOOTING.en.md).
 ```bash
 go build -o build/cli.exe ./cmd/cli
 go build -o build/service.exe ./cmd/service
-go build -o build/metrics-helper.exe ./cmd/metrics-helper
 ```
 
 ## Disclaimer
 
 - This utility is not affiliated with the game developer.
 - Use at your own risk.
-- Do not contact game support for this utility; use repository Issues instead. ds:(nyrokume)
+- Do not contact game support for this utility; use repository Issues instead.

@@ -12,16 +12,14 @@ Presets provide ready JVM tuning sets for different priorities:
 ## Practical selection flow
 
 1. Start with `balanced`.
-2. Run at least 2 real sessions per candidate preset.
-3. Run `cli.exe --benchmark`.
-4. Check ranking confidence.
+2. Apply `Apply Recommended Config` (or `cli.exe --autotune`).
+3. Optionally compare nearby presets manually in the same in-game scenario.
 
 ## Where to inspect results
 
-- `logs/presets/<preset>.jsonl`
 - `logs/wrapper.log`
 
 ## Notes
 
-- Short bootstrap launches do not represent real FPS behavior.
-- Without game metrics, ranking still works but is less precise.
+- Start with hardware-recommended preset first.
+- Do manual fine tuning only after long real gameplay tests.

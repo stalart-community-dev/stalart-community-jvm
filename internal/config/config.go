@@ -69,13 +69,13 @@ type Config struct {
 	// reflection_inflation_threshold is kept for older JSON profiles; it is
 	// not emitted on JDK 25 (HotSpot ignores sun.reflect.inflationThreshold).
 	// Other fields tune C2 tiered compilation and autobox caches.
-	ReflectionInflationThreshold int     `json:"reflection_inflation_threshold"`
-	AutoBoxCacheMax              int     `json:"auto_box_cache_max"`
-	UseThreadPriorities          bool    `json:"use_thread_priorities"`
-	ThreadPriorityPolicy         int     `json:"thread_priority_policy"`
+	ReflectionInflationThreshold int  `json:"reflection_inflation_threshold"`
+	AutoBoxCacheMax              int  `json:"auto_box_cache_max"`
+	UseThreadPriorities          bool `json:"use_thread_priorities"`
+	ThreadPriorityPolicy         int  `json:"thread_priority_policy"`
 	// Legacy JSON field; JDK 25 has no UseCounterDecay VM option (ignored when building flags).
-	UseCounterDecay bool `json:"use_counter_decay"`
-	CompileThresholdScaling      float64 `json:"compile_threshold_scaling"`
+	UseCounterDecay         bool    `json:"use_counter_decay"`
+	CompileThresholdScaling float64 `json:"compile_threshold_scaling"`
 }
 
 // Dir returns the configs directory next to the executable.
@@ -119,11 +119,26 @@ func Ensure(sys sysinfo.Info) error {
 	}
 
 	if ActiveName() == "" {
-		if err := SetActive("default"); err != nil {
+		if err := SetActive(RecommendPreset(sys)); err != nil {
 			return fmt.Errorf("set active config: %w", err)
 		}
 	}
 	return nil
+}
+
+// RecommendPreset returns the best preset name for current hardware.
+// This path is deterministic and does not require runtime benchmark data.
+func RecommendPreset(sys sysinfo.Info) string {
+	switch {
+	case sys.TotalGB() < 12 || sys.CPUThreads <= 4:
+		return "compat"
+	case sys.TotalGB() >= 32 && sys.CPUThreads >= 12 && sys.HasBigCache():
+		return "ultra"
+	case sys.TotalGB() >= 24 && sys.CPUThreads >= 10:
+		return "performance"
+	default:
+		return "balanced"
+	}
 }
 
 // Save writes the config to configs/<name>.json.
