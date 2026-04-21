@@ -24,7 +24,7 @@ When `stalart.exe` or `stalartw.exe` is launched, Windows starts `service.exe` i
 
 Both binaries write structured logs into `logs/wrapper.log` next to the executable: startup, hardware detection, config load, game process spawn, exit code. User profile paths are redacted, raw launcher arguments and JVM flags are never logged. The file is truncated once it exceeds 2 MB.
 
-There is no separate JVM/GC log file — STALART bundles a custom OpenJDK 9 build whose CLI parsers for `-Xlog` and `-Xloggc` have been stripped, so unified logging cannot be directed to a file. `wrapper.log` is enough for the vast majority of support cases.
+There is no separate JVM/GC log file — Stalart bundles a custom OpenJDK 9 build whose CLI parsers for `-Xlog` and `-Xloggc` have been stripped, so unified logging cannot be directed to a file. `wrapper.log` is enough for the vast majority of support cases.
 
 ## CLI Interaction
 

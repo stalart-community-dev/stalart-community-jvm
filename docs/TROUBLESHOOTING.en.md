@@ -92,7 +92,7 @@ For protection after uninstalling, leave **Windows Defender** (the built-in Micr
 
 ## Launcher messages
 
-This section covers the messages that appear inside the launcher window (gravity launcher, Steam, EGS, etc.) and are related to how the wrapper plugs into the game launch.
+This section covers the messages that appear inside the launcher window (Stalart Launcher, Steam, EGS, etc.) and are related to how the wrapper plugs into the game launch.
 
 ### `Failed while waiting for launched game`
 
@@ -122,7 +122,7 @@ This section covers third-party programs that draw their own UI on top of the ga
 
 ### HudSight / Steam Overlay not working
 
-**Symptoms.** The overlay is running, configured, and works fine with other games, but draws nothing on top of STALART: Steam Overlay won't open on `Shift + Tab`, HudSight doesn't show the crosshair, Discord doesn't highlight speakers.
+**Symptoms.** The overlay is running, configured, and works fine with other games, but draws nothing on top of Stalart: Steam Overlay won't open on `Shift + Tab`, HudSight doesn't show the crosshair, Discord doesn't highlight speakers.
 
 **What we know.**
 

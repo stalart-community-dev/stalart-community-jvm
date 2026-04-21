@@ -8,6 +8,7 @@
 package logging
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -54,6 +55,53 @@ func logDir() string {
 		return filepath.Join(".", "logs")
 	}
 	return filepath.Join(filepath.Dir(self), "logs")
+}
+
+func presetRunsDir() string {
+	return filepath.Join(logDir(), "presets")
+}
+
+func sanitizeFileName(name string) string {
+	if name == "" {
+		return "unknown"
+	}
+	r := strings.NewReplacer(
+		"/", "_",
+		"\\", "_",
+		":", "_",
+		"*", "_",
+		"?", "_",
+		"\"", "_",
+		"<", "_",
+		">", "_",
+		"|", "_",
+		" ", "_",
+	)
+	return r.Replace(name)
+}
+
+// AppendPresetRun writes one JSONL event into logs/presets/<preset>.jsonl.
+// This is used for side-by-side preset comparison across runs.
+func AppendPresetRun(presetName string, payload any) error {
+	dir := presetRunsDir()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create presets log dir: %w", err)
+	}
+	filePath := filepath.Join(dir, sanitizeFileName(presetName)+".jsonl")
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("open preset run log: %w", err)
+	}
+	defer f.Close()
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal preset run payload: %w", err)
+	}
+	if _, err := f.Write(append(data, '\n')); err != nil {
+		return fmt.Errorf("write preset run payload: %w", err)
+	}
+	return nil
 }
 
 // RedactPath replaces the Windows user-profile segment in a path with

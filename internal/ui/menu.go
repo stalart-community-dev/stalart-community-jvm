@@ -4,10 +4,12 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"stalart-wrapper/internal/config"
 	"stalart-wrapper/internal/elevate"
 	"stalart-wrapper/internal/installer"
+	"stalart-wrapper/internal/presetbench"
 	"stalart-wrapper/internal/sysinfo"
 )
 
@@ -35,6 +37,7 @@ func Run() error {
 			{"Uninstall", elevatedAction("--uninstall", "uninstall")},
 			{"Status", func() bool { PrintStatus(); return true }},
 			{"Select Config", func() bool { selectConfig(); return false }},
+			{"Benchmark Presets (auto-select best)", func() bool { benchmarkAndSelect(); return true }},
 			{"Regenerate Config", func() bool { regenerate(sys); return true }},
 			{"Exit", func() bool { exit = true; return false }},
 		}
@@ -50,6 +53,72 @@ func Run() error {
 		}
 		fmt.Print("\033[2J\033[H")
 	}
+}
+
+func benchmarkAndSelect() {
+	names, err := config.List()
+	if err != nil {
+		fmt.Printf("[error] %v\n", err)
+		return
+	}
+	filtered := make([]string, 0, len(names))
+	for _, n := range names {
+		if strings.EqualFold(n, "default") {
+			continue
+		}
+		filtered = append(filtered, n)
+	}
+	if len(filtered) < 2 {
+		fmt.Println("[benchmark] Need at least 2 presets in configs/ to compare.")
+		return
+	}
+
+	scores, err := presetbench.Evaluate(filtered, 2)
+	if err != nil {
+		fmt.Printf("[benchmark] %v\n", err)
+		fmt.Println("[benchmark] Play with each preset at least 2 successful runs, then retry.")
+		return
+	}
+
+	fmt.Println("[benchmark] Ranking:")
+	for i, s := range scores {
+		fmt.Printf("  %d) %s\n", i+1, s.String())
+	}
+
+	best := scores[0]
+	if err := config.SetActive(best.Preset); err != nil {
+		fmt.Printf("[error] Failed to set active preset: %v\n", err)
+		return
+	}
+	fmt.Printf("[benchmark] Selected best preset: %s (score %.2f)\n", best.Preset, best.BalancedScore)
+}
+
+// RunBenchmarkOnce executes preset benchmark selection in non-interactive mode.
+func RunBenchmarkOnce() error {
+	names, err := config.List()
+	if err != nil {
+		return err
+	}
+	filtered := make([]string, 0, len(names))
+	for _, n := range names {
+		if strings.EqualFold(n, "default") {
+			continue
+		}
+		filtered = append(filtered, n)
+	}
+	if len(filtered) < 2 {
+		return fmt.Errorf("need at least 2 presets in configs/")
+	}
+	scores, err := presetbench.Evaluate(filtered, 2)
+	if err != nil {
+		return err
+	}
+	best := scores[0]
+	if err := config.SetActive(best.Preset); err != nil {
+		return err
+	}
+	fmt.Printf("[benchmark] Selected best preset: %s (score %.2f)\n", best.Preset, best.BalancedScore)
+	return nil
 }
 
 func drawHeader(active string, exists bool) {

@@ -5,17 +5,16 @@
 
 > [!WARNING]
 > This project is an **unofficial** utility developed by [nyrokume.dev](https://github.com/nyrokume-dev).
-> The utility **is not affiliated with gravity launcher**, but has been verified by [GloomyFolken](https://github.com/GloomyFolken)
-> and classified as safe software.
+> The utility **is not affiliated with Stalart Launcher**.
 
 > [!CAUTION]
 > If you run into problems after installing this utility, **open the [troubleshooting document](./docs/TROUBLESHOOTING.en.md)** and find your situation there. Every common issue and its fix is documented step by step.
 >
-> Please **do not bother gravity launcher moderators or the game's technical support** with issues related to this utility. They are regular people just like you, and they have no idea what is happening on your computer. Everything you need is in the document linked above — read it before reaching out to anyone.
+> Please **do not bother Stalart moderators or the game's technical support** with issues related to this utility. They are regular people just like you, and they have no idea what is happening on your computer. Everything you need is in the document linked above — read it before reaching out to anyone.
 
 **A utility for modifying JVM startup parameters and optimizing its performance.**
 
-**JVM (Java Virtual Machine)** is the runtime environment through which [STALART: X](https://stalart.net/) operates.
+**JVM (Java Virtual Machine)** is the runtime environment through which [Stalart: X](https://stalart.net/) operates.
 
 The game code is executed not directly on the system, but inside a Java virtual machine. During execution, it compiles the code into machine code specific to your PC (JIT compilation). Essentially, this is an additional layer between the game and hardware that is responsible for executing the code and adapting it to the system.
 
@@ -25,7 +24,7 @@ This program allows you to change JVM startup parameters to increase game perfor
 > The utility tunes JVM parameters for any amount of RAM starting from 8 GB.
 > On systems with less RAM the generated `default.json` uses a minimally safe heap,
 > but stable gameplay is not guaranteed — prefer upgrading your RAM or sticking with
-> the stock gravity launcher settings.
+> the stock Stalart launcher settings.
 
 [![Downloads](https://img.shields.io/github/downloads/STALART-Community/stalart-jvm-optimization/total?label=Downloads&color=green)](../../releases)
 [![Latest Release](https://img.shields.io/github/v/release/STALART-Community/stalart-jvm-optimization?label=Latest)](../../releases/latest)
@@ -63,14 +62,14 @@ The utility is installed **once** and automatically runs each time the game is l
 ### Installation
 
 > [!TIP]
-> The most common mistake during install is dropping `jvm_wrapper` somewhere deep inside `runtime/stalart/...`. The folder must sit **at the root of the gravity launcher directory**, next to `ExboLink.exe` and the `runtime/` directory. Here's what it should look like:
+> The most common mistake during install is dropping `jvm_wrapper` somewhere deep inside `runtime/stalart/...`. The folder must sit **at the root of the Stalart Launcher directory**, next to `ExboLink.exe` and the `runtime/` directory. Here's what it should look like:
 >
-> ![Example of where the jvm_wrapper folder belongs at the root of the gravity launcher directory](./docs/assets/install-folder-location.jpg)
+> ![Example of where the jvm_wrapper folder belongs at the root of the Stalart Launcher directory](./docs/assets/install-folder-location.jpg)
 
 1. Add the game folder to Windows Defender exclusions or your antivirus software:
-    - Example for Steam: `C:\Program Files\Steam\steamapps\common\STALART`
-    - Example for Launcher: `C:\Users\User\AppData\Roaming\gravity launcher`
-    - Example for EGS: `C:\Games\EGS Stalart\STALART`
+    - Example for Steam: `C:\Program Files\Steam\steamapps\common\Stalart`
+    - Example for Launcher: `C:\Users\User\AppData\Roaming\Stalart Launcher`
+    - Example for EGS: `C:\Games\EGS Stalart\Stalart`
 2. Create the `jvm_wrapper` directory at the root of the launcher folder (see the tip above).
 3. Download the [latest release](../../releases/latest) and extract `wrapper.zip` into `jvm_wrapper` — you should end up with `cli.exe`, `service.exe` and an `examples/` directory inside.
 4. Run `cli.exe`, select `Install` in the menu using the arrow keys and press **Enter**.
@@ -82,7 +81,7 @@ The utility is installed **once** and automatically runs each time the game is l
 > A few notes on how the utility behaves:
 >
 > - Hardware G-Sync may cause image artifacts. Disabling it is recommended.
-> - The utility only applies to STALART and does not touch other JVM applications.
+> - The utility only applies to Stalart and does not touch other JVM applications.
 > - On systems with 8-16 GB of RAM, it is recommended to keep the Windows page file enabled.
 
 ### Uninstallation
@@ -99,13 +98,21 @@ which will be located in the `jvm_wrapper/configs/default.json` folder.
 The game will launch with this profile by default.
 This profile will be adapted to your computer's parameters, but its existence does not preclude custom configuration.
 
-**Configuration is saved in the Windows registry:** `HKCU\\Software\\StalcraftWrapper`.
+**Configuration is saved in the Windows registry:** `HKCU\\Software\\StalartWrapper`.
 
 You can change the launch configuration yourself. To do this:
 
 1. Run `cli.exe`, select `Select Config` in the menu using the arrow keys and press **Enter**.
 2. Select the desired configuration file and press **Enter**.
 3. Restart the game if it is running.
+
+To auto-pick the best preset from collected metrics:
+
+- in menu: `Benchmark Presets (auto-select best)`
+- in CLI: `cli.exe --benchmark`
+
+> [!NOTE]
+> For reliable comparison you need `logs/presets/<preset>.jsonl` with at least 2 successful runs per preset.
 
 > [!NOTE]
 > By default the utility creates multiple ready-to-use profiles:
@@ -147,6 +154,22 @@ on configuration parameters.
 
 The utility writes a single structured log file at `jvm_wrapper/logs/wrapper.log` next to `cli.exe` and `service.exe`. It records startup, hardware detection, config load, game process spawn and exit code. User profile paths are redacted to `<user>`, raw launcher arguments and JVM flags are **never written**. The file is truncated once it exceeds 2 MB.
 
+Additionally, `service.exe` writes telemetry for preset comparison: average process CPU usage and peak memory usage.  
+If `logs/game_metrics.jsonl` exists near `javaw.exe` (or `STALART_GAME_METRICS_FILE` is set), the log also includes game-provided averages for `fps`, `frame_time_ms`, `cpu_percent`, and `gpu_percent`.
+
+To auto-generate this file, use `metrics-helper`:
+
+```bash
+go build -o build/metrics-helper.exe ./cmd/metrics-helper
+build/metrics-helper.exe --out "logs/game_metrics.jsonl" --presentmon-csv "C:\\path\\to\\presentmon.csv"
+```
+
+For mandatory preset comparison, `service.exe` also writes a dedicated JSONL log per preset:
+
+- `jvm_wrapper/logs/presets/<preset_name>.jsonl`
+
+Each record contains: preset name, launch mode, exit code, process lifetime, process CPU/memory telemetry, aggregated game metrics (`fps`, `frame_time_ms`, `cpu_percent`, `gpu_percent`), and key config parameters used for that run.
+
 If you run into a problem and want to report it, attach this file to your GitHub issue. It contains no personal information and is safe to publish.
 
 ### Large Pages
@@ -168,7 +191,7 @@ To enable Large Pages, follow these steps:
 3. Navigate to *Local Policies → User Rights Assignment*.
 4. Find the *"Lock pages in memory"* policy.
 5. Double-click it and add your user account or the "Administrators" group.
-6. Apply the changes and log out / log back in for the policy to take effect.
+6. Apply the changes and reboot your PC.
 
 ### Technical Information
 

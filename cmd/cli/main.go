@@ -55,6 +55,13 @@ func handleCLI() (handled bool, code int) {
 	case "--status":
 		ui.PrintStatus()
 		return true, 0
+	case "--benchmark":
+		if err := ui.RunBenchmarkOnce(); err != nil {
+			slog.Error("benchmark failed", "err", err)
+			fmt.Fprintf(os.Stderr, "[benchmark] %v\n", err)
+			return true, 1
+		}
+		return true, 0
 	}
 	return false, 0
 }
