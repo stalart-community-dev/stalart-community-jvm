@@ -52,6 +52,10 @@ type Snapshot struct {
 	GameAvgGPUPercent   float64
 	GameMetricsSource   string
 	GameMetricsDetected bool
+	GameMetricsReason   string
+	GameLinesRead       int
+	GameLinesInvalid    int
+	GameLinesSkippedOld int
 }
 
 type Sampler struct {
@@ -143,19 +147,26 @@ func (s *Sampler) run() {
 }
 
 type gameMetric struct {
+	TS          string  `json:"ts"`
 	FPS         float64 `json:"fps"`
 	FrameTimeMS float64 `json:"frame_time_ms"`
 	CPUPercent  float64 `json:"cpu_percent"`
 	GPUPercent  float64 `json:"gpu_percent"`
 }
 
-func (s *Sampler) MergeGameMetrics(exePath string) {
-	path, ok := resolveGameMetricsPath(exePath)
+func (s *Sampler) MergeGameMetrics(exePath string, launchStart time.Time) {
+	path, reason, ok := resolveGameMetricsPath(exePath)
 	if !ok {
+		s.mu.Lock()
+		s.sn.GameMetricsReason = reason
+		s.mu.Unlock()
 		return
 	}
 	f, err := os.Open(path)
 	if err != nil {
+		s.mu.Lock()
+		s.sn.GameMetricsReason = "open_failed"
+		s.mu.Unlock()
 		return
 	}
 	defer f.Close()
@@ -166,15 +177,27 @@ func (s *Sampler) MergeGameMetrics(exePath string) {
 	sc.Buffer(buf, 1024*1024)
 
 	var count int
+	var linesRead int
+	var invalidLines int
+	var skippedOld int
 	var fpsSum, ftSum, cpuSum, gpuSum float64
+	cutoff := launchStart.Add(-5 * time.Second)
 	for sc.Scan() {
+		linesRead++
 		line := strings.TrimSpace(sc.Text())
 		if line == "" {
 			continue
 		}
 		var m gameMetric
 		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			invalidLines++
 			continue
+		}
+		if m.TS != "" {
+			if ts, err := time.Parse(time.RFC3339, m.TS); err == nil && ts.Before(cutoff) {
+				skippedOld++
+				continue
+			}
 		}
 		count++
 		fpsSum += m.FPS
@@ -183,6 +206,13 @@ func (s *Sampler) MergeGameMetrics(exePath string) {
 		gpuSum += m.GPUPercent
 	}
 	if count == 0 {
+		s.mu.Lock()
+		s.sn.GameMetricsSource = path
+		s.sn.GameMetricsReason = "no_valid_samples"
+		s.sn.GameLinesRead = linesRead
+		s.sn.GameLinesInvalid = invalidLines
+		s.sn.GameLinesSkippedOld = skippedOld
+		s.mu.Unlock()
 		return
 	}
 
@@ -195,12 +225,16 @@ func (s *Sampler) MergeGameMetrics(exePath string) {
 	s.sn.GameAvgGPUPercent = gpuSum / float64(count)
 	s.sn.GameMetricsSource = path
 	s.sn.GameMetricsDetected = true
+	s.sn.GameMetricsReason = "ok"
+	s.sn.GameLinesRead = linesRead
+	s.sn.GameLinesInvalid = invalidLines
+	s.sn.GameLinesSkippedOld = skippedOld
 }
 
-func resolveGameMetricsPath(exePath string) (string, bool) {
+func resolveGameMetricsPath(exePath string) (string, string, bool) {
 	if p := strings.TrimSpace(os.Getenv("STALART_GAME_METRICS_FILE")); p != "" {
 		if _, err := os.Stat(p); err == nil {
-			return p, true
+			return p, "env_override", true
 		}
 	}
 	exeDir := filepath.Dir(exePath)
@@ -211,10 +245,10 @@ func resolveGameMetricsPath(exePath string) (string, bool) {
 	}
 	for _, p := range candidates {
 		if _, err := os.Stat(p); err == nil {
-			return p, true
+			return p, "auto_discovered", true
 		}
 	}
-	return "", false
+	return "", "file_not_found", false
 }
 
 func processCPUTime100ns(handle syscall.Handle) (uint64, error) {

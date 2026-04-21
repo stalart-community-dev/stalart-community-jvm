@@ -24,6 +24,13 @@ This document defines a reproducible method to evaluate JVM presets for `JDK 25`
 - `startup_ms`
 - `gc_cpu_pct`
 
+## Telemetry quality and fallback
+
+- `service.exe` writes a preset event for every normal wrapper run (`exit_code = 0`).
+- If valid game metrics are present (`game_metrics.jsonl`), ranking prioritizes `fps/frame_time`.
+- If game metrics are missing, soft fallback is applied using `avg_process_cpu_pct` and `wait_ms`.
+- Confidence (`high/medium/low`) is downgraded for fallback-only data and shown in ranking output.
+
 ## Harness
 
 Scripts:

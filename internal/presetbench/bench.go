@@ -12,34 +12,41 @@ import (
 )
 
 type runEvent struct {
-	TS                 string  `json:"ts"`
-	PresetName         string  `json:"preset_name"`
-	WaitMS             int64   `json:"wait_ms"`
-	ExitCode           int     `json:"exit_code"`
-	GameMetricsDetected bool   `json:"game_metrics_detected"`
-	GameSamples        int     `json:"game_samples"`
-	GameAvgFPS         float64 `json:"game_avg_fps"`
-	GameAvgFrameTimeMS float64 `json:"game_avg_frame_time_ms"`
-	GameAvgCPUPercent  float64 `json:"game_avg_cpu_pct"`
-	GameAvgGPUPercent  float64 `json:"game_avg_gpu_pct"`
-	AvgProcessCPU      float64 `json:"avg_process_cpu_pct"`
-	PeakWorkingSetMB   float64 `json:"peak_working_set_mb"`
+	TS                  string  `json:"ts"`
+	PresetName          string  `json:"preset_name"`
+	WaitMS              int64   `json:"wait_ms"`
+	ExitCode            int     `json:"exit_code"`
+	GameMetricsDetected bool    `json:"game_metrics_detected"`
+	GameSamples         int     `json:"game_samples"`
+	GameAvgFPS          float64 `json:"game_avg_fps"`
+	GameAvgFrameTimeMS  float64 `json:"game_avg_frame_time_ms"`
+	GameAvgCPUPercent   float64 `json:"game_avg_cpu_pct"`
+	GameAvgGPUPercent   float64 `json:"game_avg_gpu_pct"`
+	AvgProcessCPU       float64 `json:"avg_process_cpu_pct"`
+	PeakWorkingSetMB    float64 `json:"peak_working_set_mb"`
+	TelemetryQuality    string  `json:"telemetry_quality"`
 }
 
 type PresetScore struct {
 	Preset         string
 	Runs           int
+	GameRuns       int
 	AvgFPS         float64
 	AvgFrameTimeMS float64
 	AvgCPUPercent  float64
 	AvgGPUPercent  float64
 	AvgWaitMS      float64
 	BalancedScore  float64
+	TelemetryMode  string
+	Confidence     string
 }
 
 var ErrNotEnoughData = errors.New("not enough preset benchmark data")
 
 func logDir() string {
+	if override := strings.TrimSpace(os.Getenv("STALART_PRESETBENCH_LOG_DIR")); override != "" {
+		return override
+	}
 	self, err := os.Executable()
 	if err != nil {
 		return filepath.Join(".", "logs")
@@ -127,8 +134,10 @@ func Evaluate(presets []string, minRuns int) ([]PresetScore, error) {
 		cpuVals := make([]float64, 0, len(events))
 		gpuVals := make([]float64, 0, len(events))
 		waitVals := make([]float64, 0, len(events))
+		gameRuns := 0
 		for _, e := range events {
-			if e.GameMetricsDetected && e.GameSamples > 0 {
+			if e.GameMetricsDetected && e.GameSamples > 0 && (e.GameAvgFPS > 0 || e.GameAvgFrameTimeMS > 0) {
+				gameRuns++
 				if e.GameAvgFPS > 0 {
 					fpsVals = append(fpsVals, e.GameAvgFPS)
 				}
@@ -155,6 +164,7 @@ func Evaluate(presets []string, minRuns int) ([]PresetScore, error) {
 		scores = append(scores, PresetScore{
 			Preset:         p,
 			Runs:           len(events),
+			GameRuns:       gameRuns,
 			AvgFPS:         avg(fpsVals),
 			AvgFrameTimeMS: avg(ftVals),
 			AvgCPUPercent:  avg(cpuVals),
@@ -170,6 +180,8 @@ func Evaluate(presets []string, minRuns int) ([]PresetScore, error) {
 	loFT, hiFT := scores[0].AvgFrameTimeMS, scores[0].AvgFrameTimeMS
 	loCPU, hiCPU := scores[0].AvgCPUPercent, scores[0].AvgCPUPercent
 	loWait, hiWait := scores[0].AvgWaitMS, scores[0].AvgWaitMS
+	hasAnyFPS := false
+	hasAnyFrameTime := false
 	for _, s := range scores[1:] {
 		if s.AvgFPS < loFPS {
 			loFPS = s.AvgFPS
@@ -196,6 +208,14 @@ func Evaluate(presets []string, minRuns int) ([]PresetScore, error) {
 			hiWait = s.AvgWaitMS
 		}
 	}
+	for _, s := range scores {
+		if s.AvgFPS > 0 {
+			hasAnyFPS = true
+		}
+		if s.AvgFrameTimeMS > 0 {
+			hasAnyFrameTime = true
+		}
+	}
 
 	for i := range scores {
 		fpsScore := normalizeHigher(scores[i].AvgFPS, loFPS, hiFPS)
@@ -204,8 +224,30 @@ func Evaluate(presets []string, minRuns int) ([]PresetScore, error) {
 		waitScore := normalizeLower(scores[i].AvgWaitMS, loWait, hiWait)
 		latency := ftScore
 		throughput := fpsScore
+		if !hasAnyFrameTime {
+			latency = waitScore
+		}
+		if !hasAnyFPS {
+			throughput = waitScore
+		}
 		stability := 0.6*cpuScore + 0.4*waitScore
-		scores[i].BalancedScore = 100 * (0.5*latency + 0.4*throughput + 0.1*stability)
+
+		gameCoverage := float64(scores[i].GameRuns) / float64(scores[i].Runs)
+		penalty := 1.0
+		switch {
+		case gameCoverage == 0:
+			penalty = 0.85
+			scores[i].TelemetryMode = "process_fallback"
+			scores[i].Confidence = "low"
+		case gameCoverage < 0.7:
+			penalty = 0.93
+			scores[i].TelemetryMode = "mixed"
+			scores[i].Confidence = "medium"
+		default:
+			scores[i].TelemetryMode = "game_metrics"
+			scores[i].Confidence = "high"
+		}
+		scores[i].BalancedScore = 100 * (0.5*latency + 0.4*throughput + 0.1*stability) * penalty
 	}
 
 	// sort descending
@@ -221,7 +263,7 @@ func Evaluate(presets []string, minRuns int) ([]PresetScore, error) {
 
 func (s PresetScore) String() string {
 	return fmt.Sprintf(
-		"%s: score=%.2f runs=%d fps=%.2f frame_ms=%.2f cpu=%.2f gpu=%.2f wait_ms=%.0f",
-		s.Preset, s.BalancedScore, s.Runs, s.AvgFPS, s.AvgFrameTimeMS, s.AvgCPUPercent, s.AvgGPUPercent, s.AvgWaitMS,
+		"%s: score=%.2f runs=%d game_runs=%d confidence=%s telemetry=%s fps=%.2f frame_ms=%.2f cpu=%.2f gpu=%.2f wait_ms=%.0f",
+		s.Preset, s.BalancedScore, s.Runs, s.GameRuns, s.Confidence, s.TelemetryMode, s.AvgFPS, s.AvgFrameTimeMS, s.AvgCPUPercent, s.AvgGPUPercent, s.AvgWaitMS,
 	)
 }

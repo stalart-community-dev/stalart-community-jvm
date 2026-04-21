@@ -24,6 +24,13 @@
 - `startup_ms`
 - `gc_cpu_pct`
 
+## Telemetry quality и fallback
+
+- `service.exe` пишет событие пресета на каждый нормальный запуск (`exit_code = 0`).
+- Если игровые метрики (`game_metrics.jsonl`) найдены и валидны, ранжирование использует `fps/frame_time` как основной сигнал.
+- Если игровых метрик нет, включается soft fallback по `avg_process_cpu_pct` и `wait_ms`.
+- Для таких результатов понижается confidence (`high/medium/low`) и это учитывается в итоговом выборе.
+
 ## Harness
 
 Скрипты:

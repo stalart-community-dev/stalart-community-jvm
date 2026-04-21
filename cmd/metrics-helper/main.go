@@ -37,6 +37,7 @@ type filetime struct {
 }
 
 type metric struct {
+	TS          string  `json:"ts"`
 	FPS         float64 `json:"fps"`
 	FrameTimeMS float64 `json:"frame_time_ms"`
 	CPUPercent  float64 `json:"cpu_percent"`
@@ -97,6 +98,7 @@ func main() {
 		_ = syscall.CloseHandle(h)
 
 		m := metric{
+			TS:         now.UTC().Format(time.RFC3339),
 			CPUPercent: round(cpuPct, 2),
 		}
 		if *presentMonCSV != "" {

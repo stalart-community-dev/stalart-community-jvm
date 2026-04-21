@@ -183,8 +183,14 @@ func launch(exePath string, args []string) int {
 		start := time.Now()
 		code, err := proc.Wait()
 		waitMs := time.Since(start).Milliseconds()
-		sampler.MergeGameMetrics(runExe)
+		sampler.MergeGameMetrics(runExe, start)
 		snap := sampler.Stop()
+		telemetryQuality := "process_only"
+		if snap.GameMetricsDetected && snap.GameSamples >= 10 {
+			telemetryQuality = "full"
+		} else if snap.GameMetricsDetected {
+			telemetryQuality = "partial"
+		}
 		slog.Info("telemetry summary",
 			"attempt", attempt,
 			"samples", snap.Samples,
@@ -197,6 +203,11 @@ func launch(exePath string, args []string) int {
 			"game_avg_cpu_pct", fmt.Sprintf("%.2f", snap.GameAvgCPUPercent),
 			"game_avg_gpu_pct", fmt.Sprintf("%.2f", snap.GameAvgGPUPercent),
 			"game_metrics_source", logging.RedactPath(snap.GameMetricsSource),
+			"game_metrics_reason", snap.GameMetricsReason,
+			"game_lines_read", snap.GameLinesRead,
+			"game_lines_invalid", snap.GameLinesInvalid,
+			"game_lines_skipped_old", snap.GameLinesSkippedOld,
+			"telemetry_quality", telemetryQuality,
 		)
 		presetEvent := map[string]any{
 			"ts":                     time.Now().UTC().Format(time.RFC3339),
@@ -218,6 +229,12 @@ func launch(exePath string, args []string) int {
 			"game_avg_cpu_pct":       snap.GameAvgCPUPercent,
 			"game_avg_gpu_pct":       snap.GameAvgGPUPercent,
 			"game_metrics_source":    logging.RedactPath(snap.GameMetricsSource),
+			"game_metrics_reason":    snap.GameMetricsReason,
+			"game_lines_read":        snap.GameLinesRead,
+			"game_lines_invalid":     snap.GameLinesInvalid,
+			"game_lines_skipped_old": snap.GameLinesSkippedOld,
+			"telemetry_quality":      telemetryQuality,
+			"normal_launch":          code == 0,
 		}
 		if presetCfg != nil {
 			presetEvent["heap_gb"] = presetCfg.HeapSizeGB

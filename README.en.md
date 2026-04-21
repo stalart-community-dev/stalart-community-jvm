@@ -113,6 +113,7 @@ To auto-pick the best preset from collected metrics:
 
 > [!NOTE]
 > For reliable comparison you need `logs/presets/<preset>.jsonl` with at least 2 successful runs per preset.
+> If game metrics are not available yet, ranking still works through soft fallback (process CPU + wait time), but with lower confidence.
 
 > [!NOTE]
 > By default the utility creates multiple ready-to-use profiles:
@@ -168,7 +169,9 @@ For mandatory preset comparison, `service.exe` also writes a dedicated JSONL log
 
 - `jvm_wrapper/logs/presets/<preset_name>.jsonl`
 
-Each record contains: preset name, launch mode, exit code, process lifetime, process CPU/memory telemetry, aggregated game metrics (`fps`, `frame_time_ms`, `cpu_percent`, `gpu_percent`), and key config parameters used for that run.
+Each record contains: preset name, launch mode, exit code, process lifetime, process CPU/memory telemetry, aggregated game metrics (`fps`, `frame_time_ms`, `cpu_percent`, `gpu_percent`), key config parameters, and telemetry diagnostics (`telemetry_quality`, `game_metrics_reason`, `game_lines_*`).
+
+A record is written to `logs/presets/<preset>.jsonl` on every normal wrapper run (`exit_code = 0`), including retry/fallback launch attempts.
 
 If you run into a problem and want to report it, attach this file to your GitHub issue. It contains no personal information and is safe to publish.
 
