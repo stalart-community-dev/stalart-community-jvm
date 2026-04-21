@@ -1,21 +1,21 @@
-# Stalcraft JVM Wrapper
+# Stalart JVM Wrapper
 
 [![eng](https://img.shields.io/badge/lang-English-blue)](README.en.md)
 [![ru](https://img.shields.io/badge/lang-Russian-blue)](README.md)
 
 > [!WARNING]
-> Данный проект является **неофициальной** утилитой, разработанной [SilentBless](https://github.com/SilentBless).
-> Утилита **не аффилирована с EXBO**, однако была проверена [GloomyFolken](https://github.com/GloomyFolken)
+> Данный проект является **неофициальной** утилитой, разработанной [nyrokume.dev](https://github.com/nyrokume-dev).
+> Утилита **не аффилирована с gravity launcher**, однако была проверена [GloomyFolken](https://github.com/GloomyFolken)
 > и классифицирована как безопасное ПО.
 
 > [!CAUTION]
 > Если вы столкнулись с проблемами после установки этой программы — **перейдите в [документ по устранению неполадок](./docs/TROUBLESHOOTING.md)** и найдите там свою ситуацию. Все типичные проблемы и способы их решения описаны пошагово.
 >
-> Пожалуйста, **не беспокойте этой утилитой ни модераторов EXBO, ни техническую поддержку игры**. Они такие же обычные люди, как и вы, и понятия не имеют, что именно происходит на вашем компьютере. Все инструкции уже есть в документе по ссылке выше — откройте его до того, как писать куда-либо.
+> Пожалуйста, **не беспокойте этой утилитой ни модераторов gravity launcher, ни техническую поддержку игры**. Они такие же обычные люди, как и вы, и понятия не имеют, что именно происходит на вашем компьютере. Все инструкции уже есть в документе по ссылке выше — откройте его до того, как писать куда-либо.
 
 **Утилита для модификации параметров запуска JVM и оптимизации её работы.**
 
-**JVM (Java Virtual Machine)** — это среда выполнения, через которую работает [STALCRAFT: X](https://stalcraft.ru/).
+**JVM (Java Virtual Machine)** — это среда выполнения, через которую работает [STALART: X](https://stalart.ru/).
 
 Код игры исполняется не напрямую на системе, а внутри виртуальной машины Java. Во время работы она компилирует его
 в машинный код под конкретный ПК (JIT-компиляция). Фактически это дополнительный слой между игрой и железом,
@@ -28,10 +28,10 @@
 > Утилита подбирает параметры JVM под любой объём ОЗУ, начиная с 8 ГБ.
 > На системах с меньшим объёмом `default.json` генерируется с минимально безопасным heap,
 > но стабильной работы игры это не гарантирует — лучше увеличить оперативную память или
-> использовать стандартные настройки лаунчера EXBO.
+> использовать стандартные настройки лаунчера gravity launcher.
 
-[![Downloads](https://img.shields.io/github/downloads/EXBO-Community/stalcraft-jvm-optimization/total?label=Downloads&color=green)](../../releases)
-[![Latest Release](https://img.shields.io/github/v/release/EXBO-Community/stalcraft-jvm-optimization?label=Latest)](../../releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/STALART-Community/stalart-jvm-optimization/total?label=Downloads&color=green)](../../releases)
+[![Latest Release](https://img.shields.io/github/v/release/STALART-Community/stalart-jvm-optimization?label=Latest)](../../releases/latest)
 
 ---
 
@@ -42,7 +42,7 @@
 - **`cli.exe`** — интерактивное меню для установки, удаления и управления конфигурациями. Запускается пользователем только когда нужно что-то настроить.
 - **`service.exe`** — тихий перехватчик, который Windows автоматически запускает при старте игры. Не имеет интерфейса, трогать вручную не нужно.
 
-`service.exe` перехватывает запуск процесса игры `stalcraft.exe` (лаунчер) или `stalcraftw.exe` (Steam) для:
+`service.exe` перехватывает запуск процесса игры `stalart.exe` (лаунчер) или `stalartw.exe` (Steam) для:
 
 - **Подбора оптимальной конфигурации JVM:** объём выделенных ресурсов, режим работы GC (Garbage Collector) и JIT-компиляции.
 - **Повышения приоритета процесса игры:** процесс выполняется приоритетнее по сравнению с другими процессами.
@@ -66,14 +66,14 @@
 ### Установка
 
 > [!TIP]
-> Самая частая ошибка при установке — положить `jvm_wrapper` куда-то глубоко внутрь `runtime/stalcraft/...`. Папка должна лежать **в корне директории EXBO**, рядом с `ExboLink.exe` и каталогом `runtime/`. Вот как это должно выглядеть:
+> Самая частая ошибка при установке — положить `jvm_wrapper` куда-то глубоко внутрь `runtime/stalart/...`. Папка должна лежать **в корне директории gravity launcher**, рядом с `ExboLink.exe` и каталогом `runtime/`. Вот как это должно выглядеть:
 >
-> ![Пример расположения папки jvm_wrapper в корне директории лаунчера EXBO](./docs/assets/install-folder-location.jpg)
+> ![Пример расположения папки jvm_wrapper в корне директории лаунчера gravity launcher](./docs/assets/install-folder-location.jpg)
 
 1. Добавьте папку с игрой в исключения Защитника Windows или другого Антивирусного ПО:
-   - Пример для Steam: `C:\Program Files\Steam\steamapps\common\STALCRAFT`
-   - Пример для Лаунчера: `C:\Users\User\AppData\Roaming\EXBO`
-   - Пример для EGS: `C:\Games\EGS Stalcraft\STALCRAFT`
+   - Пример для Steam: `C:\Program Files\Steam\steamapps\common\STALART`
+   - Пример для Лаунчера: `C:\Users\User\AppData\Roaming\gravity launcher`
+   - Пример для EGS: `C:\Games\EGS Stalart\STALART`
 2. Создайте каталог `jvm_wrapper` в корне директории лаунчера (см. подсказку выше).
 3. Скачайте [последнюю версию](../../releases/latest) и распакуйте `wrapper.zip` в папку `jvm_wrapper` — внутри должны оказаться `cli.exe`, `service.exe` и каталог `examples/`.
 4. Запустите `cli.exe`, в открывшемся меню выберите пункт `Install` при помощи стрелок и нажмите **Enter**.

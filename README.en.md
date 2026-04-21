@@ -1,21 +1,21 @@
-# Stalcraft JVM Wrapper
+# Stalart JVM Wrapper
 
 [![eng](https://img.shields.io/badge/lang-English-blue)](README.en.md)
 [![ru](https://img.shields.io/badge/lang-Russian-blue)](README.md)
 
 > [!WARNING]
-> This project is an **unofficial** utility developed by [SilentBless](https://github.com/SilentBless).
-> The utility **is not affiliated with EXBO**, but has been verified by [GloomyFolken](https://github.com/GloomyFolken)
+> This project is an **unofficial** utility developed by [nyrokume.dev](https://github.com/nyrokume-dev).
+> The utility **is not affiliated with gravity launcher**, but has been verified by [GloomyFolken](https://github.com/GloomyFolken)
 > and classified as safe software.
 
 > [!CAUTION]
 > If you run into problems after installing this utility, **open the [troubleshooting document](./docs/TROUBLESHOOTING.en.md)** and find your situation there. Every common issue and its fix is documented step by step.
 >
-> Please **do not bother EXBO moderators or the game's technical support** with issues related to this utility. They are regular people just like you, and they have no idea what is happening on your computer. Everything you need is in the document linked above — read it before reaching out to anyone.
+> Please **do not bother gravity launcher moderators or the game's technical support** with issues related to this utility. They are regular people just like you, and they have no idea what is happening on your computer. Everything you need is in the document linked above — read it before reaching out to anyone.
 
 **A utility for modifying JVM startup parameters and optimizing its performance.**
 
-**JVM (Java Virtual Machine)** is the runtime environment through which [STALCRAFT: X](https://stalcraft.net/) operates.
+**JVM (Java Virtual Machine)** is the runtime environment through which [STALART: X](https://stalart.net/) operates.
 
 The game code is executed not directly on the system, but inside a Java virtual machine. During execution, it compiles the code into machine code specific to your PC (JIT compilation). Essentially, this is an additional layer between the game and hardware that is responsible for executing the code and adapting it to the system.
 
@@ -25,10 +25,10 @@ This program allows you to change JVM startup parameters to increase game perfor
 > The utility tunes JVM parameters for any amount of RAM starting from 8 GB.
 > On systems with less RAM the generated `default.json` uses a minimally safe heap,
 > but stable gameplay is not guaranteed — prefer upgrading your RAM or sticking with
-> the stock EXBO launcher settings.
+> the stock gravity launcher settings.
 
-[![Downloads](https://img.shields.io/github/downloads/EXBO-Community/stalcraft-jvm-optimization/total?label=Downloads&color=green)](../../releases)
-[![Latest Release](https://img.shields.io/github/v/release/EXBO-Community/stalcraft-jvm-optimization?label=Latest)](../../releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/STALART-Community/stalart-jvm-optimization/total?label=Downloads&color=green)](../../releases)
+[![Latest Release](https://img.shields.io/github/v/release/STALART-Community/stalart-jvm-optimization?label=Latest)](../../releases/latest)
 
 ---
 
@@ -39,7 +39,7 @@ The utility ships as two binaries that must live in the same directory:
 - **`cli.exe`** — the interactive menu for installing, removing and managing configurations. The user only launches this when they need to change something.
 - **`service.exe`** — the silent interceptor that Windows spawns automatically when the game starts. It has no UI, and you never run it by hand.
 
-`service.exe` intercepts the startup of the game process `stalcraft.exe` (launcher) or `stalcraftw.exe` (Steam) to:
+`service.exe` intercepts the startup of the game process `stalart.exe` (launcher) or `stalartw.exe` (Steam) to:
 
 - **Select optimal JVM configuration:** allocated resources volume, Garbage Collector (GC) mode, and JIT compilation mode.
 - **Increase game process priority:** the process runs with higher priority compared to other processes.
@@ -63,14 +63,14 @@ The utility is installed **once** and automatically runs each time the game is l
 ### Installation
 
 > [!TIP]
-> The most common mistake during install is dropping `jvm_wrapper` somewhere deep inside `runtime/stalcraft/...`. The folder must sit **at the root of the EXBO directory**, next to `ExboLink.exe` and the `runtime/` directory. Here's what it should look like:
+> The most common mistake during install is dropping `jvm_wrapper` somewhere deep inside `runtime/stalart/...`. The folder must sit **at the root of the gravity launcher directory**, next to `ExboLink.exe` and the `runtime/` directory. Here's what it should look like:
 >
-> ![Example of where the jvm_wrapper folder belongs at the root of the EXBO launcher directory](./docs/assets/install-folder-location.jpg)
+> ![Example of where the jvm_wrapper folder belongs at the root of the gravity launcher directory](./docs/assets/install-folder-location.jpg)
 
 1. Add the game folder to Windows Defender exclusions or your antivirus software:
-    - Example for Steam: `C:\Program Files\Steam\steamapps\common\STALCRAFT`
-    - Example for Launcher: `C:\Users\User\AppData\Roaming\EXBO`
-    - Example for EGS: `C:\Games\EGS Stalcraft\STALCRAFT`
+    - Example for Steam: `C:\Program Files\Steam\steamapps\common\STALART`
+    - Example for Launcher: `C:\Users\User\AppData\Roaming\gravity launcher`
+    - Example for EGS: `C:\Games\EGS Stalart\STALART`
 2. Create the `jvm_wrapper` directory at the root of the launcher folder (see the tip above).
 3. Download the [latest release](../../releases/latest) and extract `wrapper.zip` into `jvm_wrapper` — you should end up with `cli.exe`, `service.exe` and an `examples/` directory inside.
 4. Run `cli.exe`, select `Install` in the menu using the arrow keys and press **Enter**.
@@ -82,7 +82,7 @@ The utility is installed **once** and automatically runs each time the game is l
 > A few notes on how the utility behaves:
 >
 > - Hardware G-Sync may cause image artifacts. Disabling it is recommended.
-> - The utility only applies to STALCRAFT and does not touch other JVM applications.
+> - The utility only applies to STALART and does not touch other JVM applications.
 > - On systems with 8-16 GB of RAM, it is recommended to keep the Windows page file enabled.
 
 ### Uninstallation
