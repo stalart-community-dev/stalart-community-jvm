@@ -65,10 +65,3 @@ Default location:
 A template is auto-generated for each run:
 - `real-runs.template.csv`
 
-## Current JDK 25 outcome
-
-Current balanced winner for `low/mid/high`:
-- `balanced`
-
-Reason:
-- highest combined score among safe presets (`FullGC = 0`).
