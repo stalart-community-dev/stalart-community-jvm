@@ -1,62 +1,39 @@
-# Technical Information
+# Architecture and Runtime Flow
 
-## Architecture
+## Components
 
-The project ships two binaries that must live in the same directory:
+- `cmd/cli` — interactive install/uninstall and profile selection UI.
+- `cmd/service` — IFEO debugger, real entrypoint for game Java launch.
+- `cmd/metrics-helper` — generator for `game_metrics.jsonl`.
+- `internal/config` — profile loading/generation.
+- `internal/jvm` — JVM flag building/filtering.
+- `internal/telemetry` — process and game metrics collection.
+- `internal/presetbench` — preset ranking and auto-selection.
 
-- `cli.exe` — user-facing entry point. Interactive menu, install/uninstall of the IFEO hook, status checks, config management.
-- `service.exe` — silent interceptor. Registered as the IFEO `Debugger` for `stalart.exe` / `stalartw.exe` and spawned by Windows automatically when the game launches. Has no UI.
+## Launch flow
 
-On install, `cli.exe` writes the path to `service.exe` (not itself) into the registry. The split keeps the Windows → game path running through a minimal UI-free binary while all management stays in a separate `cli.exe`.
+1. `cli.exe --install` registers IFEO interception.
+2. Game starts Java runtime.
+3. Windows launches `service.exe`.
+4. `service.exe`:
+   - detects game launch vs bootstrap;
+   - loads active profile;
+   - injects compatible flags;
+   - starts child process;
+   - collects telemetry until exit.
+5. On exit:
+   - writes `wrapper.log`;
+   - appends JSONL event to `logs/presets/<preset>.jsonl`.
 
-## Operating Mechanism
+## Log safety
 
-The wrapper uses the IFEO (Image File Execution Options) mechanism to intercept game startup.
-When `stalart.exe` or `stalartw.exe` is launched, Windows starts `service.exe` instead, passing it the original launcher arguments. `service.exe` then:
+- raw JVM args are never written;
+- user paths are redacted to `<user>`;
+- `wrapper.log` size is bounded.
 
-1. Loads the active configuration file from the `configs/` directory next to the executable.
-2. Strips conflicting flags from the original launcher arguments and injects hardware-tuned JVM flags.
-3. Creates the process directly through `ntdll!NtCreateUserProcess` with the `PS_ATTRIBUTE_IFEO_SKIP_DEBUGGER` attribute to avoid re-interception through IFEO.
-4. Raises memory and I/O priorities of the new process via `NtSetInformationProcess`.
-5. Exits as soon as the game process shows its first visible window.
+## Benchmark behavior
 
-## Logging
-
-Both binaries write structured logs into `logs/wrapper.log` next to the executable: startup, hardware detection, config load, game process spawn, exit code. User profile paths are redacted, raw launcher arguments and JVM flags are never logged. The file is truncated once it exceeds 2 MB.
-
-There is no separate JVM/GC log file — Stalart bundles a custom OpenJDK 9 build whose CLI parsers for `-Xlog` and `-Xloggc` have been stripped, so unified logging cannot be directed to a file. `wrapper.log` is enough for the vast majority of support cases.
-
-## CLI Interaction
-
-Installing the IFEO interception
-
-```bash
-cli.exe --install     # install IFEO interception
-```
-
-Checking interception status
-
-```bash
-cli.exe --status      # check interception status
-```
-
-Removing the IFEO interception
-
-```bash
-cli.exe --uninstall   # remove IFEO interception
-```
-
-Running `cli.exe` without arguments opens the interactive menu that exposes the same actions plus config management.
-
-## Building the Project
-
-`cli.exe` and `service.exe` can be downloaded from the releases page or built locally.
-From the repository root:
-
-```bash
-mkdir -p build
-go build -trimpath -ldflags="-s -w" -o build/cli.exe     ./cmd/cli
-go build -trimpath -ldflags="-s -w" -o build/service.exe ./cmd/service
-```
-
-Drop both binaries into the same directory before running — the installer is only in `cli.exe`, but it looks for `service.exe` next to itself.
+- requires at least 2 successful runs per preset;
+- if game metrics exist (`fps/frame_time`), they are prioritized;
+- otherwise soft fallback is used (`process cpu` + `wait_ms`);
+- output includes confidence (`high/medium/low`).

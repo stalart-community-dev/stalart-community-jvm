@@ -1,67 +1,35 @@
-# Тестирование пресетов JDK 25
+# Тестирование производительности
 
-Документ описывает воспроизводимую методику оценки пресетов JVM для `JDK 25` с целевой кучей `8 ГБ`.
+## Цель
 
-## Цель и критерии
+Сравнить пресеты JVM и выбрать лучший для конкретного ПК по балансу:
 
-- Цель: выбрать пресет с **balanced** приоритетом (latency + throughput + стабильность).
-- Единая формула ранжирования:
-  - `BalancedScore = 0.5 * Latency + 0.4 * Throughput + 0.1 * Stability`
-- Safety-gate:
-  - если в классе ПК есть пресеты с `FullGC = 0`, пресеты с `FullGC > 0` не участвуют в выборе default.
+- latency (frametime/pause),
+- throughput (FPS),
+- стабильность (CPU/wait variance).
 
-## Матрица классов ПК
+## Источники данных
 
-- `low_end`: 4-6 ядер, 8-16 ГБ RAM
-- `mid_range`: 6-8 ядер, 16-32 ГБ RAM
-- `high_end`: 8-16+ ядер, 32+ ГБ RAM
+- `logs/presets/<preset>.jsonl` — основной источник ранжирования;
+- `logs/game_metrics.jsonl` — дополнительные игровые метрики;
+- `logs/wrapper.log` — диагностика запуска.
 
-## KPI
+## Минимальный протокол
 
-- `p95_pause_ms`, `p99_pause_ms`
-- `avg_fps`, `low_1_fps`
-- `full_gc_count`
-- `startup_ms`
-- `gc_cpu_pct`
+1. Выберите 2-4 пресета.
+2. На каждом пресете сделайте минимум 2 полноценных игровых сессии.
+3. Выполните `cli.exe --benchmark`.
+4. Зафиксируйте итоговый top-1 и confidence.
 
-## Telemetry quality и fallback
+## Интерпретация confidence
 
-- `service.exe` пишет событие пресета на каждый нормальный запуск (`exit_code = 0`).
-- Если игровые метрики (`game_metrics.jsonl`) найдены и валидны, ранжирование использует `fps/frame_time` как основной сигнал.
-- Если игровых метрик нет, включается soft fallback по `avg_process_cpu_pct` и `wait_ms`.
-- Для таких результатов понижается confidence (`high/medium/low`) и это учитывается в итоговом выборе.
+- `high` — достаточное покрытие игровыми метриками;
+- `medium` — смешанный набор (частично fallback);
+- `low` — в основном fallback по process-метрикам.
 
-## Harness
+## Рекомендации по чистоте измерений
 
-Скрипты:
-- `scripts/perf/run-profiles.ps1`
-- `scripts/perf/parse-results.py`
-- `scripts/perf/report.py`
-
-Запуск:
-
-```powershell
-pwsh ./scripts/perf/run-profiles.ps1 -Mode both
-```
-
-Результат:
-- `artifacts/perf/<timestamp>/rows.csv`
-- `artifacts/perf/<timestamp>/rows.json`
-- `artifacts/perf/<timestamp>/winners.json`
-- `artifacts/perf/<timestamp>/report.md`
-
-## Реальные игровые прогоны
-
-Для режима `real` подготовьте CSV:
-
-```csv
-preset,pc_class,p95_pause_ms,p99_pause_ms,avg_fps,low_1_fps,full_gc_count,startup_ms,gc_cpu_pct
-balanced,mid_range,72,96,130,99,0,2980,14
-```
-
-Путь по умолчанию:
-- `artifacts/perf/real-runs.csv`
-
-Шаблон автоматически создается в каждой папке прогона:
-- `real-runs.template.csv`
-
+- одинаковая сцена/маршрут теста;
+- одинаковые настройки графики;
+- закрытые фоновые тяжелые процессы;
+- не сравнивать по сверхкоротким сессиям.
