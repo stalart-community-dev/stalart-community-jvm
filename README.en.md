@@ -30,6 +30,7 @@ Detailed flow: [docs/OVERVIEW.en.md](./docs/OVERVIEW.en.md).
 3. Select `Install`.
 4. Launch the game.
 5. Switch profiles later via `Select Config` if needed.
+6. if you need launch vanila launcher select `Uninstall`
 
 ## Configs and presets
 
@@ -68,4 +69,4 @@ go build -o build/metrics-helper.exe ./cmd/metrics-helper
 
 - This utility is not affiliated with the game developer.
 - Use at your own risk.
-- Do not contact game support for this utility; use repository Issues instead.
+- Do not contact game support for this utility; use repository Issues instead. ds:(nyrokume)
