@@ -90,29 +90,41 @@ For protection after uninstalling, leave **Windows Defender** (the built-in Micr
 
 ---
 
-## Launcher messages
+## Launcher and wrapper console messages
 
-This section covers the messages that appear inside the launcher window (Stalart Launcher, Steam, EGS, etc.) and are related to how the wrapper plugs into the game launch.
+This section explains normal startup and exit messages shown by `service.exe` and Stalart Launcher.
 
-### `Failed while waiting for launched game`
+### `[START] Write param successful`
 
-![Launcher window showing "Failed while waiting for launched game"](./assets/failed-while-waiting.png)
+![Wrapper window with Write param successful message](./assets/stalart-wrapper-start-success.png)
 
-**What happened.** The launcher started `stalart.exe` / `stalartw.exe` and expected the game process to stay alive for the entire duration of your play session. But because of how the wrapper works (IFEO hook + launch via `NtCreateUserProcess`), the launcher "loses sight of" the game process shortly after it appears — `service.exe` detaches as soon as the game shows its first window. When you then close the game normally — via the in-game menu or the window close button — the launcher sees that as "the process disappeared unexpectedly" and shows this dialog.
+**What it means.** The wrapper successfully wrote JVM startup parameters and handed off launch to the game. This is a **successful startup**.
 
-**What to do.** Just click **OK** and dismiss the message. It's normal behavior, no action is required: the game launched, played and exited correctly. The launcher simply doesn't know how to track a process that was started through an IFEO hook.
+**Do you need to do anything.** No. If the game window opens after this line, everything is working as intended.
+
+### `[START] Process exit with code 0`
+
+![Stalart launcher log after manual game close](./assets/stalart-launcher-process-exit-0.png)
+
+**What it means.** Exit code `0` means the process ended normally with no error.
+
+**When this is expected.**
+
+- You closed the game manually (in-game menu, `Alt+F4`, or window close button).
+- The log then shows `Process exit with code 0`.
+
+In this scenario no action is required: startup and shutdown were both successful.
 
 > [!NOTE]
-> If this message appears **after a normal exit from the game** (you closed it yourself via the in-game menu or Alt+F4) — ignore it, everything is working correctly.
->
-> If this message appears **after the game actually crashed** (black screen, hard freeze, dropped to the desktop with no exit dialog) — the dialog itself is unrelated, the launcher shows it either way. Something else crashed: either your configuration profile doesn't suit your hardware, or the wrapper is fundamentally incompatible with your system.
+> If the launcher shows a service message after the game closes, use the exit code as the source of truth: `0` is normal.
 
-**If the game is actually crashing.**
+**When to investigate further.**
 
-1. Try **Regenerate Config** in the `cli.exe` menu — it rebuilds `default.json` for the current hardware, in case the old config is stale or no longer matches a PC upgrade.
-2. If that helped — keep playing, the problem is solved.
-3. If it didn't help — temporarily remove the wrapper (`cli.exe` → `Uninstall`) and play without it. If the crashes go away without the wrapper, the problem is compatibility with your hardware or Windows build — open an issue on GitHub and attach `jvm_wrapper/logs/wrapper.log`.
-4. If the crashes persist without the wrapper, the wrapper isn't the cause — it's the game itself, your drivers, or the hardware.
+Treat it as an issue only if you see non-zero exit codes, crashes/freezes, or the game never reaches its window. Then:
+
+1. Run **Regenerate Config** in `cli.exe` and retry.
+2. Check `jvm_wrapper/logs/wrapper.log`.
+3. If crashes disappear without the wrapper, open an issue and attach the log.
 
 ---
 
