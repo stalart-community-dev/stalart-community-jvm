@@ -54,6 +54,7 @@ go build -trimpath -ldflags="-s -w" -o build/service.exe ./cmd/service
 ## Credits
 
 - [SilentBless](https://github.com/SilentBless) — original idea and early JVM-wrapper architecture.
+- [Nyrokume](https://github.com/Nyrokume ) — the original idea and adaptation of the JVM wrapper.
 - [stalart-community-dev](https://github.com/stalart-community-dev/stalart-community-jvm) — ongoing JDK 25 branch development.
 
 ## Disclaimer
