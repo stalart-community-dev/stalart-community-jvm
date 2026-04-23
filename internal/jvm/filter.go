@@ -253,14 +253,3 @@ func FilterArgs(orig, injected []string) []string {
 	return append(result, app...)
 }
 
-// InjectArgs keeps original JVM args and appends injected args before main class.
-func InjectArgs(orig, injected []string) []string {
-	jvmArgs, mainClass, app := splitArgs(orig)
-	result := make([]string, 0, len(jvmArgs)+len(injected)+1+len(app))
-	result = append(result, jvmArgs...)
-	result = append(result, injected...)
-	if mainClass != "" {
-		result = append(result, mainClass)
-	}
-	return append(result, app...)
-}
