@@ -54,6 +54,7 @@ go build -trimpath -ldflags="-s -w" -o build/service.exe ./cmd/service
 ## Credits
 
 - [SilentBless](https://github.com/SilentBless) — оригинальная идея и ранняя архитектура JVM-wrapper.
+- [Nyrokume](https://github.com/Nyrokume) — оригинальная идея и адаптация JVM-wrapper.
 - [stalart-community-dev](https://github.com/stalart-community-dev/stalart-community-jvm) — развитие ветки JDK 25.
 
 ## Дисклеймер
